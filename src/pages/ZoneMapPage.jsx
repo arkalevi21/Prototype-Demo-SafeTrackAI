@@ -1,6 +1,7 @@
 import { useState } from "react";
 import DashboardLayout from "../components/DashboardLayout";
 import CrudModal from "../components/CrudModal";
+import { useAuth } from "../context/AuthContext";
 import { violationsLog } from "../data";
 import { AlertTriangle, Users, Camera, Radio, Plus, Edit2 } from "lucide-react";
 
@@ -17,13 +18,19 @@ const sc = {
 };
 
 export default function ZoneMapPage() {
+  const { user } = useAuth();
   const [crud, setCrud] = useState({ isOpen: false, isEdit: false });
   const alerts = violationsLog.filter(v => v.status === "Open").length;
+  
+  const canEdit = user?.role !== "pengawas";
+
   return (
     <DashboardLayout pageTitle="Peta Zona Virtual" pageSubtitle="Pemantauan lantai pabrik secara real-time">
-      <div className="flex justify-end mb-3 sm:mb-4 relative z-10">
-        <button onClick={() => setCrud({ isOpen: true, isEdit: false })} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-primary-600 text-white hover:bg-primary-700 text-xs font-medium transition-all shadow-sm"><Plus className="w-3.5 h-3.5" /> Tambah Zona</button>
-      </div>
+      {canEdit && (
+        <div className="flex justify-end mb-3 sm:mb-4 relative z-10">
+          <button onClick={() => setCrud({ isOpen: true, isEdit: false })} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-primary-600 text-white hover:bg-primary-700 text-xs font-medium transition-all shadow-sm"><Plus className="w-3.5 h-3.5" /> Tambah Zona</button>
+        </div>
+      )}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-5 -mt-2">
         <div className="lg:col-span-8 xl:col-span-9">
           <div className="card overflow-hidden animate-slide-in">
@@ -61,9 +68,11 @@ export default function ZoneMapPage() {
         <div className="lg:col-span-4 xl:col-span-3 space-y-4 stagger-children">
           {zones.map((z) => { const c = sc[z.status]; return (
             <div key={z.id} className={`card p-4 border-l-4 ${c.border} relative group`}>
-              <button onClick={() => setCrud({ isOpen: true, isEdit: true })} className="absolute top-2 right-2 w-6 h-6 rounded-md bg-gray-100 flex items-center justify-center text-gray-400 hover:text-primary-600 hover:bg-gray-200 opacity-0 group-hover:opacity-100 transition-all">
-                <Edit2 className="w-3 h-3" />
-              </button>
+              {canEdit && (
+                <button onClick={() => setCrud({ isOpen: true, isEdit: true })} className="absolute top-2 right-2 w-6 h-6 rounded-md bg-gray-100 flex items-center justify-center text-gray-400 hover:text-primary-600 hover:bg-gray-200 opacity-0 group-hover:opacity-100 transition-all">
+                  <Edit2 className="w-3 h-3" />
+                </button>
+              )}
               <div className="flex items-center justify-between mb-2 pr-8"><h4 className="text-xs font-bold text-gray-900">Zona {z.id}</h4><span className={`px-2 py-0.5 rounded-full text-[9px] font-semibold ${c.badge}`}>{c.label}</span></div>
               <p className="text-[10px] text-gray-400 mb-2">{z.label}</p>
               <div className="grid grid-cols-2 gap-2">
@@ -84,6 +93,8 @@ export default function ZoneMapPage() {
         fields={[
           { label: "ID Zona", placeholder: "Contoh: E", value: crud.isEdit ? "A" : "" },
           { label: "Nama Zona", placeholder: "Contoh: Produksi Baru", value: crud.isEdit ? "Zona A - Produksi" : "" },
+          { label: "Gambar Denah/Peta", type: "file" },
+          { label: "Pemetaan Area", type: "zone-drawer", value: crud.isEdit ? { top: 5, left: 3, width: 44, height: 42 } : null },
           { label: "Deskripsi", placeholder: "Penjelasan area", value: crud.isEdit ? "Lantai produksi utama" : "" },
           { label: "Kapasitas Pekerja", type: "number", value: crud.isEdit ? "42" : "" }
         ]}

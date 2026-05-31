@@ -1,7 +1,20 @@
+import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { X, Save, Trash2 } from "lucide-react";
+import ZoneDrawer from "./ZoneDrawer";
 
 export default function CrudModal({ isOpen, onClose, title, fields, onSave, onDelete, isEdit }) {
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [isOpen]);
+
   if (!isOpen) return null;
   return createPortal(
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 sm:p-8" onClick={onClose}>
@@ -15,11 +28,17 @@ export default function CrudModal({ isOpen, onClose, title, fields, onSave, onDe
         <div className="p-4 sm:p-5 space-y-4 overflow-y-auto flex-1">
           {fields.map((f, i) => (
             <div key={i}>
-              <label className="block text-[10px] sm:text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wider">{f.label}</label>
+              {f.type !== "zone-drawer" && (
+                <label className="block text-[10px] sm:text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wider">{f.label}</label>
+              )}
               {f.type === "select" ? (
                 <select className="w-full h-9 sm:h-10 px-3 rounded-lg border border-gray-200 text-xs sm:text-sm text-gray-700 focus:outline-none focus:border-primary-500 bg-white" defaultValue={f.value}>
                   {f.options.map(o => <option key={o} value={o}>{o}</option>)}
                 </select>
+              ) : f.type === "file" ? (
+                <input type="file" accept="image/*" className="w-full text-xs sm:text-sm text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100 cursor-pointer" />
+              ) : f.type === "zone-drawer" ? (
+                <ZoneDrawer value={f.value} />
               ) : (
                 <input type={f.type || "text"} placeholder={f.placeholder} defaultValue={f.value} className="w-full h-9 sm:h-10 px-3 rounded-lg border border-gray-200 text-xs sm:text-sm text-gray-700 focus:outline-none focus:border-primary-500" />
               )}

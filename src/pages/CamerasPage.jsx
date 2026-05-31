@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import DashboardLayout from "../components/DashboardLayout";
 import CrudModal from "../components/CrudModal";
+import { useAuth } from "../context/AuthContext";
 import { cameraFeeds } from "../data";
 import { Camera, Wifi, WifiOff, Maximize2, RotateCcw, Circle, X, ShieldCheck, ShieldAlert, AlertTriangle, Cpu, Clock, ChevronLeft, ChevronRight, Plus, Edit2 } from "lucide-react";
 
@@ -54,7 +55,14 @@ function FullscreenCamera({ cam, onClose, onPrev, onNext, camIndex, totalCams })
       if (e.key === "ArrowRight") onNext();
     };
     window.addEventListener("keydown", handleKey);
-    return () => window.removeEventListener("keydown", handleKey);
+    
+    // Lock body scroll
+    document.body.style.overflow = "hidden";
+    
+    return () => {
+      window.removeEventListener("keydown", handleKey);
+      document.body.style.overflow = "";
+    };
   }, [onClose, onPrev, onNext]);
 
   const now = new Date();
@@ -217,6 +225,7 @@ function FullscreenCamera({ cam, onClose, onPrev, onNext, camIndex, totalCams })
 }
 
 export default function CamerasPage() {
+  const { user } = useAuth();
   const [fullscreenIndex, setFullscreenIndex] = useState(null);
   const [crud, setCrud] = useState({ isOpen: false, isEdit: false });
   const on = cameraFeeds.filter(c => c.status === "Online").length;
@@ -224,6 +233,8 @@ export default function CamerasPage() {
   const fullscreenCam = fullscreenIndex !== null ? cameraFeeds[fullscreenIndex] : null;
   const handlePrev = () => setFullscreenIndex(i => (i - 1 + cameraFeeds.length) % cameraFeeds.length);
   const handleNext = () => setFullscreenIndex(i => (i + 1) % cameraFeeds.length);
+  
+  const canEdit = user?.role !== "pengawas";
 
   return (
     <DashboardLayout pageTitle="Pemantauan Kamera" pageSubtitle={`${on} online • ${off} offline`}>
@@ -237,7 +248,9 @@ export default function CamerasPage() {
         <div className="flex-1" />
         <div className="flex items-center gap-2">
           <button className="hidden sm:flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-200 text-xs text-gray-500 hover:text-gray-700 hover:bg-gray-50 transition-all"><RotateCcw className="w-3.5 h-3.5" /> Refresh</button>
-          <button onClick={() => setCrud({ isOpen: true, isEdit: false })} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-primary-600 text-white hover:bg-primary-700 text-xs font-medium transition-all shadow-sm"><Plus className="w-3.5 h-3.5" /> Tambah Kamera</button>
+          {canEdit && (
+            <button onClick={() => setCrud({ isOpen: true, isEdit: false })} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-primary-600 text-white hover:bg-primary-700 text-xs font-medium transition-all shadow-sm"><Plus className="w-3.5 h-3.5" /> Tambah Kamera</button>
+          )}
         </div>
       </div>
       <div className="space-y-6">
@@ -251,9 +264,11 @@ export default function CamerasPage() {
                   const isOn = cam.status === "Online";
                   return (
                     <div key={cam.id} className={`card overflow-hidden group hover:shadow-md transition-all relative ${!isOn ? "opacity-50 grayscale" : ""}`}>
-                      <button onClick={(e) => { e.stopPropagation(); setCrud({ isOpen: true, isEdit: true }); }} className="absolute top-2 right-2 z-30 w-7 h-7 rounded-md bg-white/90 shadow-sm flex items-center justify-center text-gray-500 hover:text-primary-600 opacity-0 group-hover:opacity-100 transition-all">
-                        <Edit2 className="w-3.5 h-3.5" />
-                      </button>
+                      {canEdit && (
+                        <button onClick={(e) => { e.stopPropagation(); setCrud({ isOpen: true, isEdit: true }); }} className="absolute top-2 right-2 z-30 w-7 h-7 rounded-md bg-white/90 shadow-sm flex items-center justify-center text-gray-500 hover:text-primary-600 opacity-0 group-hover:opacity-100 transition-all">
+                          <Edit2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
                       <div className="relative h-24 sm:h-32 md:h-40 bg-gray-900 overflow-hidden">
                         {isOn ? (<>
                           <img src={cam.image} alt={`${cam.id} - ${cam.location}`} className="w-full h-full object-cover" />
